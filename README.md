@@ -14,3 +14,9 @@ source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+
+## Data Sources
+NCBI SRA  
+PDB  
+AddGene  
+SCGE Consortium Data Portal  
