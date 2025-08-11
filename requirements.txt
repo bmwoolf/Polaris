@@ -1,0 +1,11 @@
+pandas
+biopython
+torch
+pytorch-lightning
+wandb
+fastapi
+uvicorn
+esm
+huggingface_hub
+matplotlib
+scikit-learn
