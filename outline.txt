@@ -29,3 +29,8 @@ outputs/
   predicted_tropism.csv
   synthetic_scRNAseq.h5ad
   figures/
+
+Public datasets
+- single cell atlases of brain and retina for different species, with cell type annotations and marker genes
+- published AAV tropism data for common serotypes (AAV2, AAV6, DJ, Anc80)
+- promoter activity for CAG, CMV, and RHO in the different cell types
