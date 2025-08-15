@@ -1,0 +1,32 @@
+Computational scAAVengr MVP that moves 99% of the wet lab work to being computational
+
+Goal: simulate cell type x AAV serotype transduction rates from capsid sequence + promoter identity, entirely computationally
+
+Key components:
+1. cell model: model the type of cell in memory that we are going to use (animal species x organ x location in organ) 
+2. capsid to tropism prediction: model that predicts transduction efficiency for each cell type given the capsid amino acid sequence and promoter type
+3. synthetic scRNA-seq data generation (that may be a proxy for the cell type we are testing the AAV capsid in): create/obtain realistic scRNA-seq datasets with barcode integration, based on predicted transduction rates
+4. reference genome building: add barcode sequences to an existing reference genome for read mapping
+5. analysis pipeline: MLops that stitches it all together and performs read alignment, clustering, dimensionality reduction, and plotting to reproduce the same outputs as the wet-lab pipeline
+
+System layout:
+inputs/
+  capsids.fasta           # VP protein sequences of AAV variants
+  barcodes.csv            # serotype and 8-nt barcode mapping
+  promoters.yaml          # metadata for promoters (CAG, CMV, RHO)
+  atlas/                  # single-cell reference with cell-type annotations
+
+pipeline/
+  01_cell_model_embeddings/ # embeddings of cell
+  01_capsid_embeddings/     # embeddings from protein language model
+  02_tropism_prediction/    # model inference for cell type × serotype
+  03_synthetic_scRNAseq/    # scRNA-seq simulation with barcodes
+  04_reference_build/       # augmented FASTA+GTF with barcodes
+  05_alignment_analysis/    # STARsolo/Scanpy, clustering, UMAP
+  06_reporting/             # heatmaps, metrics, summary plots
+
+
+outputs/
+  predicted_tropism.csv
+  synthetic_scRNAseq.h5ad
+  figures/
