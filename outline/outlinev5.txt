@@ -1,0 +1,22 @@
+v1.0
+customer: scientist
+goal: predict AAV capsid x promoter transduction / specific cells
+
+> get cell data
+    - Arc Virtual Cell Atlas (State)- retina + brain cell profiles with annotations 
+> make cell embeddings 
+    - scVI- probabilistic latent space for all cell types 
+> get capsid data
+    - Evo2- embeddings from AAV viral protein sequences (AAv2, AAV6, DJ, Anc80)
+> encode promoters
+    - strength metadata preloaded, one-hot vectors for CAG, CMV, RHO
+> predict tropism
+    - PyTorch MLP- input (cell embedding, capsid embedding, promoter vector) -> output % expression
+> simulate scRNA-seq
+    - scDesign3- generate synthetic counts conditioned on predicted transduction + barcode integration
+> build reference genome
+    - custom FASTA script- append 8nt barcodes to genome for mapping
+> align + analyze
+    - STARsolo -> ScanPy alignment, QC, clustering, UMAP, CellType x Serotype heatmaps
+> share
+    - CellxGene
