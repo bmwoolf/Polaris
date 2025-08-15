@@ -40,7 +40,11 @@ Steps:
 2. get capsid -> tissue preferences (AAV2/6/DJ/Anc80)
 3. get promoter priors CAG/CMV/RHO relative strength by cell type
 4. implement model architecture
-    > cell encoder: use scDesign3/State/scDiffusion seeded with atlas cell-type parameters
+    > cell encoder: use scDesign3/State/Virtual Cell Atlas/scDiffusion seeded with retinal/brain atalases, harmonize an ensemble via Scanorama/BBKNN/scVI (not sure what this will entail yet)
+        > pull Arc Atlas cells → build cell-type embeddings
+        > import retina atlas (HCA retina v1.0 or Cell/NC papers) → integrate
+        > run State on matched cell states with your “payload context” → get Δ expression
+        > compose baseline + Δ expression → simulate per-cell profiles; tag AAV barcodes by predicted tropism; produce CellType × Serotype heatmaps
     > capsid encoder: ESM-2 embeddings of VP3 sequence
     > promoter encoder: one-hot + learned weight per cell type 
     > Head A (lookup prior): rule-based logits from literature
