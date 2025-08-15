@@ -1,0 +1,4 @@
+v1.0
+customer: scientist
+goal: predict AAV capsid x promoter transduction / specific cells
+
