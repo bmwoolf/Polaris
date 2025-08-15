@@ -7,9 +7,9 @@ import { FormData } from '@/types';
 export default function Home() {
   const [formData, setFormData] = useState<FormData>({
     experimentName: '',
-    targetSpecies: '',
-    targetOrgan: '',
-    regionSubregion: '',
+    targetSpecies: 'human',
+    targetOrgan: 'retina',
+    regionSubregion: 'photoreceptors',
     targetProteinGene: '',
     primaryAtlas: '',
     atlasMatchingTool: false,
@@ -18,7 +18,7 @@ export default function Home() {
     promoters: [],
     promoterMetadata: null,
     barcodeFile: null,
-    simulationMethod: '',
+    simulationMethod: 'scDesign3',
     outputMetrics: [],
     uncertaintyEstimation: false,
   });
@@ -112,7 +112,6 @@ export default function Home() {
                   onChange={(e) => handleInputChange('targetSpecies', e.target.value)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select species</option>
                   <option value="human">Human</option>
                   <option value="mouse">Mouse</option>
                   <option value="macaque">Macaque</option>
@@ -129,7 +128,6 @@ export default function Home() {
                   onChange={(e) => handleInputChange('targetOrgan', e.target.value)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select organ</option>
                   <option value="retina">Retina</option>
                   <option value="brain">Brain</option>
                   {/* <option value="other">Other</option> */}
@@ -145,7 +143,6 @@ export default function Home() {
                   onChange={(e) => handleInputChange('regionSubregion', e.target.value)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select region</option>
                   <option value="photoreceptors">Photoreceptors</option>
                   <option value="hippocampus">Hippocampus</option>
                   {/* <option value="other">Other</option> */}
@@ -160,7 +157,7 @@ export default function Home() {
                   type="text"
                   value={formData.targetProteinGene}
                   onChange={(e) => handleInputChange('targetProteinGene', e.target.value)}
-                  placeholder="Payload they want expressed"
+                  placeholder="Payload you want expressed"
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -181,7 +178,7 @@ export default function Home() {
                   type="text"
                   value={formData.primaryAtlas}
                   onChange={(e) => handleInputChange('primaryAtlas', e.target.value)}
-                  placeholder="File upload or Arc browser search"
+                  placeholder="File upload, Arc browser search"
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="text-sm text-gray-400 mt-1">
@@ -323,7 +320,6 @@ export default function Home() {
                   onChange={(e) => handleInputChange('simulationMethod', e.target.value)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select method</option>
                   <option value="scDesign3">scDesign3</option>
                   <option value="scVI">scVI</option>
                   <option value="hybrid">Hybrid</option>

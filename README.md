@@ -13,7 +13,7 @@ pip install -r requirements.txt
 ```
 
 ## Papers that inspired this
-![Organoids with Single Cell Resolution](https://www.nature.com/articles/s41434-022-00360-3)
-![scAAVengr Pipeline: In Vivo Single-Cell AAV Tropism](https://elifesciences.org/articles/64175)
-![BRAVE (Barcoded Rational AAV Vector Evolution)](https://pmc.ncbi.nlm.nih.gov/articles/PMC6936499)
+![Organoids with Single Cell Resolution](https://www.nature.com/articles/s41434-022-00360-3)  
+![scAAVengr Pipeline: In Vivo Single-Cell AAV Tropism](https://elifesciences.org/articles/64175)  
+![BRAVE (Barcoded Rational AAV Vector Evolution)](https://pmc.ncbi.nlm.nih.gov/articles/PMC6936499)  
 ![Multiplexed In Vivo Barcoded AAV Screens in Large Animals](https://pmc.ncbi.nlm.nih.gov/articles/PMC10503678)
