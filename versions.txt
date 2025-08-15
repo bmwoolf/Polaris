@@ -1,19 +1,23 @@
-v1: replicate scAAVengr paper
-hardcode capsids (AAV2, AAV6, DJ, Anc80) and promoters (CAG, CMV, RHO).
-use Arc Virtual Cell Atlas retina/brain data.
-outputs match paper: heatmaps, UMAPs, barcode counts.
+v1: replicate scAAVengr paper (hardcoded)
+hardcode capsids (AAV2, AAV6, DJ, Anc80) and promoters (CAG, CMV, RHO)
+use Arc Virtual Cell Atlas retina/brain data
+outputs match paper: heatmaps, UMAPs, barcode counts
+customer: Gene therapy researcher replicating scAAVengr tropism mapping fully in silico
 
-v2: scientist input (custom data)
-scientist uploads custom capsids, promoters, barcodes, and atlas.
-model integrates their data with Arc atlas.
-outputs reflect their specific experiment design.
+v2: scientist input (custom data for science exeriment)
+scientist uploads custom capsids, promoters, barcodes, and atlas
+model integrates their data with Arc atlas
+outputs reflect their specific experiment design
+customer: gene therapy scientist testing custom AAV capsids, promoters, and cell atlases in silico
 
-V3: model-guided design (consumer-facing)
-user provides only goal (cell type + protein to express).
-system picks capsid/promoter candidates from library, predicts tropism, and simulates results.
+V3: model-guided design (consumer-facing, engineers still building behind the scenes, no longer science problem)
+user provides only goal (cell type + protein to express)
+system picks capsid/promoter candidates from library, predicts tropism, and simulates results
+customer: genetic engineer specifying target cell type and protein—system designs and simulates optimal AAV delivery
 
-V4: fully automated
+V4: fully automated, hands-off
 AI sets goal based on reader (other crucial piece of technology)
 AI pulls relevant atlases, capsid candidates, promoters
 runs design → simulation → validation loop
 suggests or executes optimal wet-lab protocol automatically
+customer (all consumers): Fully automated platform—AI selects, designs, and validates optimal AAV delivery from end to end
