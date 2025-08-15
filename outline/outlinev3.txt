@@ -1,0 +1,8 @@
+1. get cell data: Arc Virtual Cell Atlas + State -> scVI to make cell embeddings
+2. get capsid data: ESM-2/Evo2 to make capsid embeddings
+3. encode promoters: simple vectors
+4. predict tropism: combine cell + capsid + promoter vectors -> per-cell transduciton rates
+5. generate synthetic scRNA-seq: scDesign3/scVI using predicted rates + barcodes
+6. build refernce: add barcodes to genome
+7. align and analyze: STARsolo -> Scanpy -> UMAP/heatmaps
+8. share: CellxGene interactive, model weights on HuggingFace, X, TikTok
