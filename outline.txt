@@ -30,7 +30,35 @@ outputs/
   synthetic_scRNAseq.h5ad
   figures/
 
-Public datasets
-- single cell atlases of brain and retina for different species, with cell type annotations and marker genes
+Public datasets:
+- single cell atlases of brain and retina for different species, with cell type annotations and marker genes (Arc Virtual Cell Atlas + Arc State)
 - published AAV tropism data for common serotypes (AAV2, AAV6, DJ, Anc80)
 - promoter activity for CAG, CMV, and RHO in the different cell types
+
+Steps:
+1. get retinal + cerebral cell data- type annotations, embeddings, markets
+2. get capsid -> tissue preferences (AAV2/6/DJ/Anc80)
+3. get promoter priors CAG/CMV/RHO relative strength by cell type
+4. implement model architecture
+    > cell encoder: use scDesign3/State/scDiffusion seeded with atlas cell-type parameters
+    > capsid encoder: ESM-2 embeddings of VP3 sequence
+    > promoter encoder: one-hot + learned weight per cell type 
+    > Head A (lookup prior): rule-based logits from literature
+    > Head B (metric learner): gradient-boosted trees on embeddings -> tissue logits
+    > Head C (transfer net): small MLP trained to align A/B to atlas distribution 
+    > Blend: calibrated stacking (logistic) + temperature scaling -> per cell-type rate
+    > Inject AAV-barcoded features per cell using predicted rates + realistic dropout/error
+    > Analysis: STARsolo/ScanPy to recreate clustering, t-SNE/UMAP, and CellType x Serotype heatmaps, exactly as scAAVengr showed them
+
+Quantitative metrics to aim for:
+- heatmap fidelity: correlation to priors >= 0.6 across cell types
+- uncertainty: per cell type CV <= 0.225 across samples 
+- synthetic cell realism: scRNA-seq quality (library size, gene counts, dropouts) within 10% of atlas, kNN structure preservation >= 0.8
+- ablations: removing promoter/capsid embeddings must degrade AUC >= 0.5
+
+Tech stack:
+- PyTorch, scikit-learn, Scanpy, anndata
+- Models: ESM-2, XGBoost/LightGBM, small MLP
+- Simulation: scDesign3 Python port, DDPM if needed 
+- Pipelines: Nextflow/Snakemake, Docker
+- Repro: Hydra configs, seed management, MLFlow for runs, HuggingFace for weights
