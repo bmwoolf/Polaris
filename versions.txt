@@ -1,0 +1,19 @@
+v1: replicate scAAVengr paper
+hardcode capsids (AAV2, AAV6, DJ, Anc80) and promoters (CAG, CMV, RHO).
+use Arc Virtual Cell Atlas retina/brain data.
+outputs match paper: heatmaps, UMAPs, barcode counts.
+
+v2: scientist input (custom data)
+scientist uploads custom capsids, promoters, barcodes, and atlas.
+model integrates their data with Arc atlas.
+outputs reflect their specific experiment design.
+
+V3: model-guided design (consumer-facing)
+user provides only goal (cell type + protein to express).
+system picks capsid/promoter candidates from library, predicts tropism, and simulates results.
+
+V4: fully automated
+AI sets goal based on reader (other crucial piece of technology)
+AI pulls relevant atlases, capsid candidates, promoters
+runs design → simulation → validation loop
+suggests or executes optimal wet-lab protocol automatically
