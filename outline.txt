@@ -25,7 +25,6 @@ pipeline/
   05_alignment_analysis/    # STARsolo/Scanpy, clustering, UMAP
   06_reporting/             # heatmaps, metrics, summary plots
 
-
 outputs/
   predicted_tropism.csv
   synthetic_scRNAseq.h5ad
