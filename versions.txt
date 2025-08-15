@@ -21,3 +21,4 @@ AI pulls relevant atlases, capsid candidates, promoters
 runs design → simulation → validation loop
 suggests or executes optimal wet-lab protocol automatically
 customer (all consumers): Fully automated platform—AI selects, designs, and validates optimal AAV delivery from end to end
+    > tech that consumers wear then makes && delivers the solution
