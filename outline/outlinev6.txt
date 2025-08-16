@@ -1,0 +1,17 @@
+v1 
+customer: gene therapy researcher who knows exactly what they want to test, but wants to approximate before running the wetlab experiments
+
+the [customer] comes in with their:
+- species (human, mouse, non-human primate) 
+- organ (retina, brain)
+- cell types (Muller glia, RGCs)
+- target gene + protein to express
+- capsid sequences (AAV_ FASTA)
+- DNA sequence for promoters (CAG, CMV, RHO)
+
+they upload the information via (change based on what they are used to):
+- atlas.h5ad: single-cell reference (until we have full cells)
+    > we fetch && download this for them with what they want
+- promoters.yaml: array from the frontend drop down (["CAG", "CMV", "RHO"])
+- capsid.fasta: protein sequnences of the AAV capsids they want to test
+- barcodes.csv: if they want to force specific 8nt barcodes
