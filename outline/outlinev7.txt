@@ -8,7 +8,7 @@ goal: predict AAV capsid x promoter transduction / specific cells
     - scVI- probabilistic latent space for all cell types 
 > get capsid data
     - Evo2- embeddings from AAV viral protein sequences (AAv2, AAV6, DJ, Anc80)
-    - ESM-2- ""
+    - ESM-2- tokenize amino acids -> per-residue states -> mean/attn pool -> capsid vector
 > encode promoters
     - strength metadata preloaded, one-hot vectors for CAG, CMV, RHO
 > predict tropism
