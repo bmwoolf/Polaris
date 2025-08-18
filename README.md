@@ -1,3 +1,5 @@
+![Banner](assets/github_banner.png)
+
 # rna_dna_delivery_model
 We want to:
 1. Predict if RNA/DNA edits reach intended cells for given vector + context
