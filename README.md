@@ -6,6 +6,9 @@ We want to:
 2. Convert all wet lab steps to be computational
 3. Do so while being as quantitatively accurate as what we expect in the wet lab (evals per step)
 
+This is inspired by the ![scAAVengr Pipeline: In Vivo Single-Cell AAV Tropism](https://elifesciences.org/articles/64175) paper that creates a new system on vector delivery into reinal + brain cells. I have written more about this on ![my website](https://bradleywoolf.com/wip-model-the-wet-lab-parts-of-the-scaavengr-pipeline). 
+
+
 ## Getting Started 
 ```bash
 python -m venv venv
@@ -13,6 +16,21 @@ source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+
+
+## Inputs
+Inputs from the scAAVengr experiment (Öztürk et al., eLife 2021)
+- `make_inputs_from_paper.py`: script to build `data/capsids.fasta` and `data/promoters.tsv`.
+- `data/promoters.tsv`: prewritten example (strengths are placeholders; paper does not report numeric promoter strengths).
+
+To generate `capsids.fasta` with AAV1/2/5/6/8/9 (UniProt) and AAV2 engineered variants (K91, K912, K916, K94), run:
+
+```bash
+python make_inputs_from_paper.py
+```
+
+The engineered inserts (10 aa at VP1 position 588) come directly from the paper. Add more serotypes by appending UniProt accessions in the script.
+
 
 ## Papers that inspired this
 ![Organoids with Single Cell Resolution](https://www.nature.com/articles/s41434-022-00360-3)  
