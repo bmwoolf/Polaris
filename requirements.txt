@@ -9,3 +9,8 @@ esm
 huggingface_hub
 matplotlib
 scikit-learn
+transformers
+tokenizers
+gitpython # Arc subdirs
+scanpy
+scvi-tools
