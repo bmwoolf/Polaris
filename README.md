@@ -29,7 +29,10 @@ To generate `capsids.fasta` with AAV1/2/5/6/8/9 (UniProt) and AAV2 engineered va
 python make_inputs_from_paper.py
 ```
 
-The engineered inserts (10 aa at VP1 position 588) come directly from the paper. Add more serotypes by appending UniProt accessions in the script.
+
+## Caveats
+- AAVrh10: included in the study, but I didn’t hard-code an accession to avoid guessing, you can add it if you want it in capsids.fasta (the RefSeq entries exist, or you can map to UniProt for your preferred isolate) 
+- 4YF/4YFTV/2YF mutants: listed in the paper, but the exact residue map depends on numbering conventions. I left them out by default to avoid silent misannotation (avoid future debugging), can be added after mutation map
 
 
 ## Papers that inspired this
