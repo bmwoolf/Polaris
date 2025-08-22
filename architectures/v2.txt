@@ -1,0 +1,160 @@
+NTWM END-TO-END ARCHITECTURE
+Multimodal pipeline combining Training Pipeline with Customer Workflow
+════════════════════════════════════════════════════════════════════════════════════════════
+
+GOAL: Predict AAV capsid × promoter transduction in specific cells
+
+[1] INPUT PREPARATION & VALIDATION
+┌────────────────────────────────────────────────────────────────────────┐
+│  ┌──────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  │
+│  │    CELLS     │  │   CAPSIDS   │  │  PROMOTERS  │  │  BARCODES    │  │
+│  │              │  │             │  │             │  │              │  │
+│  │ • Retina     │  │  • AAV2     │  │   • CAG     │  │ • 8nt tags   │  │
+│  │ • Brain      │  │  • AAV6     │  │   • CMV     │  │ • Construct  │  │
+│  │ • Profiles   │  │  • DJ       │  │   • RHO     │  │    mapping   │  │
+│  │ • Annotations│  │  • Anc80    │  │  • Strength │  │ • Validation │  │
+│  └──────────────┘  └─────────────┘  └─────────────┘  └──────────────┘  │
+└────────────────────────────────────────────────────────────────────────┘
+
+[2] MULTI-MODAL DATA PROCESSING
+┌───────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  CELL EMBEDDINGS (512D)                                         │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │  │
+│  │  │ Arc Virtual     │  │ scVI: Latent    │  │ Perturbation    │  │  │
+│  │  │ Cell Atlas      │  │ Space           │  │ Response        │  │  │
+│  │  │ • Cell type     │  │ • Dimensionality│  │ • Drug response │  │  │
+│  │  │ • Spatial info  │  │   reduction     │  │ • Pathway       │  │  │
+│  │  │ • Marker genes  │  │ • Batch effect  │  │   activation    │  │  │
+│  │  │ • Tissue region │  │   correction    │  │ • Stress        │  │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘  │  │
+│  │  → Concatenate → Normalize → 512D embedding                     │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  CAPSID ENCODING (256D)                                         │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │  │
+│  │  │ Evo2: AAV       │  │ ESM-2: Protein  │  │ Structural      │  │  │
+│  │  │ Protein Seqs    │  │ Tokens          │  │ Properties      │  │  │
+│  │  │ • Sequence      │  │ • AA tokens →   │  │ • Surface       │  │  │
+│  │  │ • Phylogeny     │  │   pooled        │  │   charge        │  │  │
+│  │  │ • Evolution     │  │ • Contextual    │  │ • Hydrophobicity│  │  │
+│  │  │ • Conservation  │  │   embeddings    │  │ • Flexibility   │  │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘  │  │
+│  │  → Concatenate → Normalize → 256D embedding                     │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  PROMOTER VECTORS (128D)                                        │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │  │
+│  │  │ One-hot         │  │ Strength        │  │ Regulatory      │  │  │
+│  │  │ Encoding        │  │ Metadata        │  │ Motifs          │  │  │
+│  │  │ • CAG, CMV, RHO │  │ • Expression    │  │ • TF binding    │  │  │
+│  │  │ • Sequence      │  │   level         │  │ • Enhancer      │  │  │
+│  │  │ • Length        │  │ • Tissue        │  │ • Silencer      │  │  │
+│  │  │ • GC content    │  │   specificity   │  │ • Chromatin     │  │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘  │  │
+│  │  → Concatenate → Normalize → 128D embedding                     │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────┘
+
+[3] CONTEXT CONDITIONING & PRIORS
+┌───────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  CONTEXT EMBEDDINGS (896D total)                                │  │
+│  │  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐             │  │
+│  │  │ Cell Context│  │Tissue Context│  │OMICS Context│             │  │
+│  │  │   512D      │  │   256D       │  │   128D      │             │  │
+│  │  │             │  │+ region masks│  │+ pathways   │             │  │
+│  │  └─────────────┘  └──────────────┘  └─────────────┘             │  │
+│  │  → Concatenate → LayerNorm → 896D context vector                │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  PRIORS GATEWAY                                                 │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │  │
+│  │  │ Structural      │  │ Regulatory      │  │ Sequence        │  │  │
+│  │  │ Properties      │  │ Properties      │  │ Properties      │  │  │
+│  │  │ • Endosomal     │  │ • Promoter      │  │ • Stability     │  │  │
+│  │  │   escape        │  │   activity      │  │ • Tropism bias  │  │  │
+│  │  │ • Nuclear entry │  │ • Tissue        │  │ • Expression    │  │  │
+│  │  │ • Stability     │  │   specificity   │  │   level         │  │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘  │  │
+│  │  → Discrete bins → Non-differentiable priors                    │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────┘
+
+[4] PREDICTION PIPELINE
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  TROPISM PREDICTION (MLP)                                                   │  │
+│  │  Input: [cell_embedding(512), capsid_embedding(256), promoter_vector(128)]  │  │
+│  │  Architecture: 896D → 512D → 256D → 128D → 64D → 1D                         │  │
+│  │  Output: % expression probability (0-1)                                     │  │
+│  │  Loss: Binary cross-entropy + L2 regularization                             │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                    │
+│                              ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  UNCERTAINTY ESTIMATION                                                     │  │
+│  │  • Monte Carlo Dropout (epistemic)                                          │  │
+│  │  • Heteroscedastic noise (aleatoric)                                        │  │
+│  │  • Confidence intervals for predictions                                     │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                    │
+│                              ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  SPATIOTEMPORAL DYNAMICS (Optional)                                         │  │
+│  │  • VQ-VAE tokenization of spatial data                                      │  │
+│  │  • Action discovery between timepoints                                      │  │
+│  │  • Next-state prediction with context                                       │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────────────┘
+
+[5] SYNTHETIC DATA GENERATION
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  scDesign3 CONDITIONING                                                     │  │
+│  │  • Input: predicted transduction probability                                │  │
+│  │  • Output: synthetic scRNA-seq counts                                       │  │
+│  │  • Conditioning: cell type, capsid, promoter                                │  │
+│  │  • Barcode integration for tracking                                         │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                    │
+│                              ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  REFERENCE BUILDING                                                         │  │
+│  │  • Custom FASTA script                                                      │  │
+│  │  • Append 8nt barcodes to genome                                            │  │
+│  │  • Quality control and validation                                           │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────────────┘
+
+[6] ANALYSIS & INTERPRETATION
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  ALIGNMENT & QC                                                             │  │
+│  │  • STARsolo: barcode-aware alignment                                        │  │
+│  │  • Quality metrics: mapping rate, barcode recovery                          │  │
+│  │  • Filtering: low-quality cells, doublets                                   │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                    │
+│                              ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  ANALYSIS PIPELINE                                                          │  │
+│  │  • ScanPy: clustering, UMAP, differential expression                        │  │
+│  │  • CellType × Serotype heatmaps                                             │  │
+│  │  • Expression correlation analysis                                          │  │
+│  │  • Pathway enrichment in transduced cells                                   │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                    │
+│                              ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  INTERPRETATION & SHARING                                                   │  │
+│  │  • CellxGene: interactive exploration                                       │  │
+│  │  • Export: plots, statistics, metadata                                      │  │
+│  │  • Collaboration: shareable analysis notebooks                              │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════

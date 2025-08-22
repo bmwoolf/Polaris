@@ -1,0 +1,138 @@
+
+NTWM v1.0 — AAV×Promoter→Cell Transduction Predictor (Ensemble)
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+GOAL: Predict AAV capsid × promoter transduction in specific cells
+
+[1] INPUT PREPARATION & VALIDATION
+┌────────────────────────────────────────────────────────────────────────┐
+│  ┌──────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  │
+│  │    CELLS     │  │   CAPSIDS   │  │  PROMOTERS  │  │  BARCODES    │  │
+│  │              │  │             │  │             │  │              │  │
+│  │ • Retina     │  │  • AAV2     │  │   • CAG     │  │ • 8nt tags   │  │
+│  │ • Brain      │  │  • AAV6     │  │   • CMV     │  │ • Construct  │  │
+│  │ • Profiles   │  │  • DJ       │  │   • RHO     │  │    mapping   │  │
+│  │ • Annotations│  │  • Anc80    │  │  • Strength │  │ • Validation │  │
+│  └──────────────┘  └─────────────┘  └─────────────┘  └──────────────┘  │
+└────────────────────────────────────────────────────────────────────────┘
+
+[2] MULTI-MODAL DATA PROCESSING
+┌───────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  CELL EMBEDDINGS (512D)                                         │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │  │
+│  │  │ Arc Virtual     │  │ scVI: Latent    │  │ Perturbation    │  │  │
+│  │  │ Cell Atlas      │  │ Space           │  │ Response        │  │  │
+│  │  │ • Cell type     │  │ • Dimensionality│  │ • Pathway       │  │  │
+│  │  │ • Spatial info  │  │   reduction     │  │   activation    │  │  │
+│  │  │ • Marker genes  │  │ • Batch effect  │  │ • Stress        │  │  │
+│  │  │ • Tissue region │  │   correction    │  │                 │  │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘  │  │
+│  │  → Concatenate → Normalize → 512D embedding                     │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  CAPSID ENCODING (256D)                                         │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │  │
+│  │  │ Evo2: AAV       │  │ ESM-2: Protein  │  │ Structural      │  │
+│  │  │ Protein Seqs    │  │ Tokens          │  │ Properties      │  │
+│  │  │ • Sequence      │  │ • AA tokens →   │  │ • Surface       │  │
+│  │  │ • Phylogeny     │  │   pooled        │  │   charge        │  │
+│  │  │ • Evolution     │  │ • Contextual    │  │ • Hydrophobicity│  │
+│  │  │ • Conservation  │  │   embeddings    │  │ • Flexibility   │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘  │  │
+│  │  → Concatenate → Normalize → 256D embedding                     │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  PROMOTER VECTORS (128D)                                        │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │  │
+│  │  │ One-hot         │  │ Strength        │  │ Regulatory      │  │
+│  │  │ Encoding        │  │ Metadata        │  │ Motifs          │  │
+│  │  │ • CAG, CMV, RHO │  │ • Expression    │  │ • TF binding    │  │
+│  │  │ • Sequence      │  │   level         │  │ • Enhancer      │  │
+│  │  │ • Length        │  │ • Tissue        │  │ • Silencer      │  │
+│  │  │ • GC content    │  │   specificity   │  │ • Chromatin     │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘  │  │
+│  │  → Concatenate → Normalize → 128D embedding                     │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────┘
+
+[3] PREDICTION PIPELINE (ENSEMBLE)
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  M1: BetaReg-MLP                                                            │  │
+│  │  Input: 896D concat                                                        │  │
+│  │  Layers: 896→512→256→128→(α̂,β̂)                                            │  │
+│  │  Output: % expression ~ Beta(α̂,β̂)                                         │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                    │
+│                              ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  M2: Tri-Modal Cross-Attention                                              │  │
+│  │  • Cell query; Capsid/Promoter as KV                                        │  │
+│  │  • Blocks: MHA(d=128,h=4)+MLP                                               │  │
+│  │  • Output head: Beta(α̂,β̂)                                                 │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                    │
+│  ├─ M3: XGBoost (hand-crafted features)                                         │
+│  ├─ M4: Sparse GP-RBF (32D PCA)                                                 │
+│  └─ M5: Linear Ridge Probe                                                      │
+│                              │                                                    │
+│                              ▼                                                    │
+│   ┌──────────────────────────────────────────────────────────────────────────┐   │
+│   │ BLENDER                                                                  │   │
+│   │ • Stack OOF preds from M1–M5                                             │   │
+│   │ • Constrained ridge on logits                                            │   │
+│   │ • Softmax weights (≥0, sum=1)                                            │   │
+│   │ → Final p_blend + CI                                                     │   │
+│   └──────────────────────────────────────────────────────────────────────────┘   │
+└───────────────────────────────────────────────────────────────────────────────────┘
+
+[4] SYNTHETIC DATA GENERATION
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  scDesign3 CONDITIONING                                                     │  │
+│  │  • Input: p_blend                                                           │  │
+│  │  • Output: synthetic scRNA-seq counts                                       │  │
+│  │  • Conditioning: cell type, capsid, promoter                                │  │
+│  │  • Barcode integration for tracking                                         │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                    │
+│                              ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  REFERENCE BUILDING                                                         │  │
+│  │  • Custom FASTA script                                                      │  │
+│  │  • Append 8nt barcodes to genome                                            │  │
+│  │  • Quality control and validation                                           │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────────────┘
+
+[5] ANALYSIS & INTERPRETATION
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  ALIGNMENT & QC                                                             │  │
+│  │  • STARsolo: barcode-aware alignment                                        │  │
+│  │  • Quality metrics: mapping rate, barcode recovery                          │  │
+│  │  • Filtering: low-quality cells, doublets                                   │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                    │
+│                              ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  ANALYSIS PIPELINE                                                          │  │
+│  │  • ScanPy: clustering, UMAP, differential expression                        │  │
+│  │  • CellType × Serotype heatmaps                                             │  │
+│  │  • Expression correlation analysis                                          │  │
+│  │  • Pathway enrichment in transduced cells                                   │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                    │
+│                              ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
+│  │  INTERPRETATION & SHARING                                                   │  │
+│  │  • CellxGene: interactive exploration                                       │  │
+│  │  • Export: plots, statistics, metadata                                      │  │
+│  │  • Collaboration: shareable analysis notebooks                              │  │
+│  └─────────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════

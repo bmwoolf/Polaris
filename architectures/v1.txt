@@ -1,0 +1,93 @@
+OVERALL ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+GOAL: Predict AAV capsid × promoter transduction in specific cells
+
+[1] INPUT PREPARATION
+┌───────────────────────────────────────────────────────────────────────┐
+│  ┌──────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │
+│  │    CELLS     │  │   CAPSIDS   │  │  PROMOTERS  │  │  BARCODES   │  │
+│  │              │  │             │  │             │  │             │  │
+│  │ • Retina     │  │ • AAV2      │  │ • CAG       │  │ • 8nt tags  │  │
+│  │ • Brain      │  │ • AAV6      │  │ • CMV       │  │ • Construct │  │
+│  │ • Profiles   │  │ • DJ        │  │ • RHO       │  │   mapping   │  │
+│  │ • Annotations│  │ • Anc80     │  │ • Strength  │  │             │  │
+│  └──────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │
+└───────────────────────────────────────────────────────────────────────┘
+
+[2] DATA PROCESSING
+┌─────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │ CELL EMBEDDINGS │  │ CAPSID ENCODING │  │ PROMOTER VECTORS│  │
+│  │                 │  │                 │  │                 │  │
+│  │ • Arc Virtual   │  │ • Evo2: AAV     │  │ • One-hot       │  │
+│  │   Cell Atlas    │  │   protein seqs  │  │   encoding      │  │
+│  │ • scVI: latent  │  │ • ESM-2: AA     │  │ • CAG, CMV, RHO │  │
+│  │   space         │  │   tokens →      │  │ • Strength      │  │
+│  │ • Perturbation  │  │   pooled vector │  │   metadata      │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+
+[3] PREDICTION PIPELINE
+┌───────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │  TROPISM PREDICTION                                         │  │
+│  │  Input: [cell_embedding, capsid_embedding, promoter_vector] │  │
+│  │  Model: PyTorch MLP                                         │  │
+│  │  Output: % expression probability                           │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                              │                                    │
+│                              ▼                                    │
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │  SYNTHETIC DATA GENERATION                                  │  │
+│  │  • scDesign3: synthetic scRNA-seq counts                    │  │
+│  │  • Conditioned on predicted transduction                    │  │
+│  │  • Barcode integration                                      │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                              │                                    │
+│                              ▼                                    │
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │  REFERENCE BUILDING                                         │  │
+│  │  • Custom FASTA script                                      │  │
+│  │  • Append 8nt barcodes to genome                            │  │
+│  │  • For mapping alignment                                    │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────┘
+
+[4] ANALYSIS & SHARING
+┌─────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │  ALIGNMENT      │  │  ANALYSIS       │  │  SHARING        │  │
+│  │                 │  │                 │  │                 │  │
+│  │ • STARsolo      │  │ • ScanPy        │  │ • CellxGene     │  │
+│  │ • QC            │  │ • Clustering    │  │ • Interactive   │  │
+│  │ • Mapping       │  │ • UMAP          │  │ • Exploration   │  │
+│  │                 │  │ • Heatmaps      │  │ • Collaboration │  │
+│  │                 │  │ • CellType ×    │  │                 │  │
+│  │                 │  │   Serotype      │  │                 │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+TRAINING DATA FLOW:
+Input Frames → Tokenizer → Discrete Tokens → Action Discovery → Dynamics Prediction → Safe Outputs
+
+CUSTOMER WORKFLOW:
+Cells + Capsids + Promoters → Embeddings → Prediction → Synthetic Data → Analysis → Sharing
+
+FEATURES:
+✓ Sequences processed without safety constraints
+✓ Frozen encoders (no parameter updates)  
+✓ Non-differentiable priors
+✓ Export-safe outputs only
+
+LIMITATIONS:
+• No sequence generation - can't create new DNA/RNA sequences
+• No optimization - can't say "make me a better capsid sequence"
+• No modification - can't edit or change existing sequences
+• Research only - system only analyzes and predicts, doesn't create
+
+KEY PRINCIPLE: "NO SEQUENCES, NO DESIGN" - Only context, dynamics, and safe overlays.
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
