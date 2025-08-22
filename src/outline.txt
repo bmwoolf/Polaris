@@ -2,6 +2,12 @@ v1.0
 customer: scientist
 goal: predict AAV capsid x promoter transduction / specific cells
 
+inputs:
+- cells
+- capsids
+- promoters
+- barcode <> construct map
+
 > get cell data
     - Arc Virtual Cell Atlas (State)- retina + brain cell profiles with annotations 
 > make cell embeddings 
