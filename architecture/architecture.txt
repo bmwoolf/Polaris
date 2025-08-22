@@ -1,0 +1,169 @@
+NTWM TRAINING PIPELINE - V2 (VISUAL FLOW)
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+                    [INPUT DATA]
+                    ┌───────────────────────────────────────────────────────────────┐
+                    │ DNA/RNA Sequences (sealed)  │  Cell Atlases  │  Tissue Images │
+                    │ OMICS Data (pathways, TFs)  │  Trajectories  │                │
+                    └─────────────────────────────┼────────────────┼────────────────┘
+                                                  │                │
+                                                  ▼                ▼
+                    ┌────────────────────────────────────────────────────────────────┐
+                    │                    SAFETY LAYER                                │
+                    │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+                    │  │  SafetyGate     │  │  Frozen         │  │  Priors         │ │
+                    │  │  • Seals seqs   │  │  Encoders       │  │  Gateway        │ │
+                    │  │  • Blocks export│  │  • No gen       │  │  • Discrete     │ │
+                    │  │  • Metadata only│  │  • Frozen       │  │  • Non-diff     │ │
+                    │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+                    └─────────────────────────────┬──────────────────────────────────┘
+                                                  │
+                                                  ▼
+                    ┌──────────────────────────────────────────────────────┐
+                    │                    CONTEXT EMBEDDINGS                │
+                    │  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐  │
+                    │  │ Cell Context│  │Tissue Context│  │OMICS Context│  │
+                    │  │   512D      │  │   256D       │  │   128D      │  │
+                    │  │             │  │+ region masks│  │+ pathways   │  │
+                    │  └─────────────┘  └──────────────┘  └─────────────┘  │
+                    └─────────────────────────────┬────────────────────────┘
+                                                  │
+                                                  ▼
+                    ┌───────────────────────────────────────────────────────────────┐
+                    │                    TRAINING PIPELINE                          │
+                    │                                                               │
+                    │  ┌────────────────────────────────────────────────────────┐   │
+                    │  │ 1. TOKENIZATION                                        │   │
+                    │  │    Input frames → VQ-VAE → discrete tokens z_t         │   │
+                    │  │    • CNN encoder → codebook lookup                     │   │
+                    │  │    • Reconstruction loss                               │   │
+                    │  └────────────────────────────────────────────────────────┘   │
+                    │                              │                                │
+                    │                              ▼                                │
+                    │  ┌────────────────────────────────────────────────────────┐   │
+                    │  │ 2. ACTION DISCOVERY                                    │   │
+                    │  │    (z_t, z_{t+1}) → InverseDynamics → action codes â_t │   │
+                    │  │    • Self-supervised learning                          │   │
+                    │  │    • No labels needed                                  │   │
+                    │  └────────────────────────────────────────────────────────┘   │
+                    │                              │                                │
+                    │                              ▼                                │
+                    │  ┌────────────────────────────────────────────────────────┐   │
+                    │  │ 3. DYNAMICS PREDICTION                                 │   │
+                    │  │    Context + History + Action → STDynamics → ẑ_{t+1}   │   │
+                    │  │    • Transformer-based prediction                      │   │
+                    │  │    • All context conditioning                          │   │
+                    │  └────────────────────────────────────────────────────────┘   │
+                    │                              │                                │
+                    │                              ▼                                │
+                    │  ┌────────────────────────────────────────────────────────┐   │
+                    │  │ 4. EXPORT-SAFE OUTPUT                                  │   │
+                    │  │    ẑ_{t+1} → DecoderExplainer → Overlays + Rationales  │   │
+                    │  │    • No raw sequences                                  │   │
+                    │  │    • Only probabilities & explanations                 │   │
+                    │  └────────────────────────────────────────────────────────┘   │
+                    └─────────────────────────────┬─────────────────────────────────┘
+                                                  │
+                                                  ▼
+                    ┌────────────────────────────────────────────────────────────────┐
+                    │                           OUTPUT                               │
+                    │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+                    │  │ Visual Maps     │  │ Model Files     │  │ NO Sequences    │ │
+                    │  │ • Endosome heat │  │ • codebook.ckpt │  │ • NO Design     │ │
+                    │  │   maps showing  │  │ • inv_dyn.ckpt  │  │ • NO Export     │ │
+                    │  │   where RNA/DNA │  │ • dynamics.ckpt │  │ • NO Raw Data   │ │
+                    │  │   gets stuck    │  │ • explainer.ckpt│  │                 │ │
+                    │  │ • Nuclear       │  │                 │  │                 │ │
+                    │  │   barrier maps  │  │                 │  │                 │ │
+                    │  │ • Uncertainty   │  │                 │  │                 │ │
+                    │  │   estimates     │  │                 │  │                 │ │
+                    │  │ • Plain English │  │                 │  │                 │ │
+                    │  │   explanations  │  │                 │  │                 │ │
+                    │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+                    └────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+CUSTOMER WORKFLOW (Scientist Perspective)
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+GOAL: Predict AAV capsid × promoter transduction in specific cells
+
+[1] INPUT PREPARATION
+┌──────────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │
+│  │    CELLS    │  │   CAPSIDS   │  │  PROMOTERS  │  │  BARCODES   │      │
+│  │             │  │             │  │             │  │             │      │
+│  │ • Retina    │  │ • AAV2      │  │ • CAG       │  │ • 8nt tags  │      │
+│  │ • Brain     │  │ • AAV6      │  │ • CMV       │  │ • Construct │      │
+│  │ • Profiles  │  │ • DJ        │  │ • RHO       │  │   mapping   │      │
+│  │ • Annotations│ │ • Anc80     │  │ • Strength  │  │             │      │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘      │
+└──────────────────────────────────────────────────────────────────────────┘
+
+[2] DATA PROCESSING
+┌───────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐        │
+│  │ CELL EMBEDDINGS │  │ CAPSID ENCODING │  │ PROMOTER VECTORS│        │
+│  │                 │  │                 │  │                 │        │
+│  │ • Arc Virtual   │  │ • Evo2: AAV     │  │ • One-hot       │        │
+│  │   Cell Atlas    │  │   protein seqs  │  │   encoding      │        │
+│  │ • scVI: latent  │  │ • ESM-2: AA     │  │ • CAG, CMV, RHO │        │
+│  │   space         │  │   tokens →      │  │ • Strength      │        │
+│  │ • Perturbation  │  │   pooled vector │  │   metadata      │        │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘        │
+└───────────────────────────────────────────────────────────────────────┘
+
+[3] PREDICTION PIPELINE
+┌────────────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  TROPISM PREDICTION                                                 │   │
+│  │  Input: [cell_embedding, capsid_embedding, promoter_vector]         │   │
+│  │  Model: PyTorch MLP                                                 │   │
+│  │  Output: % expression probability                                   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                              │                                             │
+│                              ▼                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  SYNTHETIC DATA GENERATION                                          │   │
+│  │  • scDesign3: synthetic scRNA-seq counts                            │   │
+│  │  • Conditioned on predicted transduction                            │   │
+│  │  • Barcode integration                                              │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                              │                                             │
+│                              ▼                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  REFERENCE BUILDING                                                 │   │
+│  │  • Custom FASTA script                                              │   │
+│  │  • Append 8nt barcodes to genome                                    │   │
+│  │  • For mapping alignment                                            │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────────┘
+
+[4] ANALYSIS & SHARING
+┌────────────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
+│  │  ALIGNMENT      │  │  ANALYSIS       │  │  SHARING        │             │
+│  │                 │  │                 │  │                 │             │
+│  │ • STARsolo      │  │ • ScanPy        │  │ • CellxGene     │             │
+│  │ • QC            │  │ • Clustering    │  │ • Interactive   │             │
+│  │ • Mapping       │  │ • UMAP          │  │ • Exploration   │             │
+│  │                 │  │ • Heatmaps      │  │ • Collaboration │             │
+│  │                 │  │ • CellType ×    │  │                 │             │
+│  │                 │  │   Serotype      │  │                 │             │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
+└────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+TRAINING DATA FLOW:
+Input Frames → Tokenizer → Discrete Tokens → Action Discovery → Dynamics Prediction → Safe Outputs
+
+CUSTOMER WORKFLOW:
+Cells + Capsids + Promoters → Embeddings → Prediction → Synthetic Data → Analysis → Sharing
+
+Limitations:
+No sequence generation-  can't ask the system to create new DNA/RNA sequences
+No optimization- can't say "make me a better capsid sequence"
+No modification- can't edit or change existing sequences
+Research only- system only analyzes and predicts, doesn't create
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
