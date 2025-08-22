@@ -12,8 +12,6 @@ from ntwm.core import (
     RegulatoryPrior,
     MiscPrior,
     SequencePrior,
-    SafetyGate,
-    SealedSequenceHandle,
     dummy_contexts
 )
 
@@ -63,25 +61,6 @@ def test_sequence_prior():
     assert prior.nuclear_entry == "med"
     assert prior.stability == "ok"
     assert prior.tropism_bias == "strong"
-
-def test_safety_gate():
-    """Test SafetyGate functionality."""
-    gate = SafetyGate(max_len=1000)
-    
-    # Test valid sequence
-    handle = gate.seal(b"ATCG", "serotype1")
-    assert handle.meta["has_bytes"] is True
-    assert handle.meta["len"] == 4
-    assert handle.meta["serotype_class"] == "serotype1"
-    
-    # Test empty sequence
-    with pytest.raises(Exception):
-        gate.seal(None, None)
-    
-    # Test sequence too long
-    long_seq = b"A" * 1001
-    with pytest.raises(Exception):
-        gate.seal(long_seq, "serotype1")
 
 def test_dummy_contexts():
     """Test dummy context generation."""

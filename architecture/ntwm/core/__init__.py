@@ -14,7 +14,6 @@ from .types import (
     Tensor
 )
 
-from .safety import SafetyGate, SealedSequenceHandle, SafetyError
 from .utils import dummy_contexts
 
 __all__ = [
@@ -27,8 +26,5 @@ __all__ = [
     "SequencePrior",
     "Overlay",
     "Tensor",
-    "SafetyGate",
-    "SealedSequenceHandle", 
-    "SafetyError",
     "dummy_contexts"
 ]

@@ -1,7 +1,7 @@
 """
 Neural Tropism World Model (NTWM) - Main package entry point.
 
-This package provides a modular, safety-focused architecture for RNA/DNA delivery modeling.
+This package provides a modular architecture for RNA/DNA delivery modeling.
 For the main package, see ntwm/ subdirectory.
 """
 

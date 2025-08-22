@@ -5,7 +5,6 @@ These are publicly-trained models that return embeddings without generation capa
 
 import torch
 import torch.nn as nn
-from ..core.safety import SealedSequenceHandle
 from ..core.types import Tensor
 
 class FrozenNucEncoder(nn.Module):
@@ -21,13 +20,13 @@ class FrozenNucEncoder(nn.Module):
             p.requires_grad_(False)
 
     @torch.no_grad()
-    def forward(self, sealed: SealedSequenceHandle) -> Tensor:
-        """Encode sealed sequence into embedding."""
+    def forward(self, sequence_info: dict) -> Tensor:
+        """Encode sequence information into embedding."""
         h = torch.zeros(self.dim)
         h[: min(8, self.dim)] = torch.tensor([
-            float(bool(sealed.meta["has_bytes"])),
-            float(sealed.meta["len"] > 0),
-            float(sealed.meta["len"] % 7) / 7.0,
+            float(bool(sequence_info.get("has_bytes", False))),
+            float(sequence_info.get("len", 0) > 0),
+            float(sequence_info.get("len", 0) % 7) / 7.0,
             0.0, 0.0, 0.0, 0.0, 0.0
         ])
         return h
@@ -45,9 +44,9 @@ class FrozenProtEncoder(nn.Module):
             p.requires_grad_(False)
 
     @torch.no_grad()
-    def forward(self, sealed: SealedSequenceHandle) -> Tensor:
-        """Encode sealed sequence into embedding."""
+    def forward(self, sequence_info: dict) -> Tensor:
+        """Encode sequence information into embedding."""
         h = torch.zeros(self.dim)
-        if sealed.meta.get("serotype_class"):
+        if sequence_info.get("serotype_class"):
             h[0] = 0.5
         return h

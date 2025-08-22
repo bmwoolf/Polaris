@@ -1,8 +1,8 @@
 """
-Neural Tropism World Model (NTWM) - Safe scaffold architecture.
+Neural Tropism World Model (NTWM) - Modular architecture.
 
-This package provides a modular, safety-focused architecture for RNA/DNA delivery modeling
-with clear separation of concerns and export-safe interfaces.
+This package provides a modular architecture for RNA/DNA delivery modeling
+with clear separation of concerns and interfaces.
 """
 
 # Core components
@@ -17,11 +17,6 @@ from .core import (
     SequencePrior,
     Overlay,
     Tensor,
-    
-    # Safety
-    SafetyGate,
-    SealedSequenceHandle, 
-    SafetyError,
     
     # Utils
     dummy_contexts
@@ -69,9 +64,6 @@ __all__ = [
     "SequencePrior",
     "Overlay",
     "Tensor",
-    "SafetyGate",
-    "SealedSequenceHandle", 
-    "SafetyError",
     "dummy_contexts",
     
     # Models

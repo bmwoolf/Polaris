@@ -16,7 +16,6 @@ from ntwm.models import (
     ActionVQ,
     DecoderExplainer
 )
-from ntwm.core import SealedSequenceHandle
 
 def test_frozen_nuc_encoder():
     """Test FrozenNucEncoder functionality."""
@@ -27,8 +26,8 @@ def test_frozen_nuc_encoder():
         assert not param.requires_grad
     
     # Test forward pass
-    handle = SealedSequenceHandle({"has_bytes": True, "len": 100})
-    output = encoder(handle)
+    sequence_info = {"has_bytes": True, "len": 100}
+    output = encoder(sequence_info)
     assert output.shape == (256,)
     assert output.dtype == torch.float32
 
@@ -41,8 +40,8 @@ def test_frozen_prot_encoder():
         assert not param.requires_grad
     
     # Test forward pass
-    handle = SealedSequenceHandle({"serotype_class": "test"})
-    output = encoder(handle)
+    sequence_info = {"serotype_class": "test"}
+    output = encoder(sequence_info)
     assert output.shape == (128,)
     assert output.dtype == torch.float32
 

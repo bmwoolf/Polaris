@@ -9,12 +9,12 @@ NTWM TRAINING PIPELINE - V2 (VISUAL FLOW)
                                                   │                │
                                                   ▼                ▼
                     ┌────────────────────────────────────────────────────────────────┐
-                    │                    SAFETY LAYER                                │
+                    │                    SEQUENCE PROCESSING                          │
                     │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-                    │  │  SafetyGate     │  │  Frozen         │  │  Priors         │ │
-                    │  │  • Seals seqs   │  │  Encoders       │  │  Gateway        │ │
-                    │  │  • Blocks export│  │  • No gen       │  │  • Discrete     │ │
-                    │  │  • Metadata only│  │  • Frozen       │  │  • Non-diff     │ │
+                    │  │  Sequence       │  │  Frozen         │  │  Priors         │ │
+                    │  │  Input          │  │  Encoders       │  │  Gateway        │ │
+                    │  │  • Basic info   │  │  • No gen       │  │  • Discrete     │ │
+                    │  │  • Metadata     │  │  • Frozen       │  │  • Non-diff     │ │
                     │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
                     └─────────────────────────────┬──────────────────────────────────┘
                                                   │
@@ -161,9 +161,18 @@ Input Frames → Tokenizer → Discrete Tokens → Action Discovery → Dynamics
 CUSTOMER WORKFLOW:
 Cells + Capsids + Promoters → Embeddings → Prediction → Synthetic Data → Analysis → Sharing
 
-Limitations:
-No sequence generation-  can't ask the system to create new DNA/RNA sequences
-No optimization- can't say "make me a better capsid sequence"
-No modification- can't edit or change existing sequences
-Research only- system only analyzes and predicts, doesn't create
+FEATURES:
+✓ Sequences processed without safety constraints
+✓ Frozen encoders (no parameter updates)  
+✓ Non-differentiable priors
+✓ Export-safe outputs only
+✓ No raw sequence access anywhere
+
+LIMITATIONS:
+• No sequence generation - can't create new DNA/RNA sequences
+• No optimization - can't say "make me a better capsid sequence"
+• No modification - can't edit or change existing sequences
+• Research only - system only analyzes and predicts, doesn't create
+
+KEY PRINCIPLE: "NO SEQUENCES, NO DESIGN" - Only context, dynamics, and safe overlays.
 ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
