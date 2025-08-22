@@ -1,6 +1,9 @@
 ![Banner](assets/github_banner.png)
 
-# rna_dna_delivery_model
+# Polaris: AAV Pediction Ensemble
+Problem: gene therapy is too expensive, not accurate enough
+Goal: predict AAV capside x promoter transduction in specific input cell types
+
 We want to:
 1. Predict if RNA/DNA edits reach intended cells for given vector + context
 2. Convert all wet lab steps to be computational
