@@ -1,6 +1,6 @@
 ![Banner](assets/github_banner.png)
 
-# Polaris: AAV Pediction Ensemble
+# Polaris: AAV Prediction Ensemble
 Problem: gene therapy is too expensive, not accurate enough
 Goal: predict AAV capside x promoter transduction in specific input cell types
 
