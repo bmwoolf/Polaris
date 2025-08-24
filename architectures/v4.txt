@@ -1,0 +1,235 @@
+v4
+
+────────────────────────────────────────────────────────────────────────
+M1: BetaReg-MLP (Deep Net)
+────────────────────────────────────────────────────────────────────────
+INPUTS
+  [ x_cell ] 
+  [ x_capsid ] 
+  [ x_promoter ]
+        │
+        ▼
+    [ CONCAT ]
+        │
+    [ LayerNorm ]
+        │
+        ▼
+SUBCOMPONENTS
+  [ Dense 896→512 ] → [ SiLU ] → [ Dropout ]
+        │
+        ▼
+  [ Dense 512→256 ] → [ SiLU ] → [ Dropout ]
+        │
+        ▼
+  [ Dense 256→128 ] → [ SiLU ]
+        │
+        ▼
+OUTPUT HEAD
+  [ Linear 128→2 ] → [ Softplus ] → (α̂, β̂)
+        │
+        ▼
+OUTPUT
+  Beta(α̂,β̂) → Expected % expression p̂
+               + Confidence Interval (uncertainty)
+
+
+
+────────────────────────────────────────────────────────────────────────
+M2: Cross-Attention Network
+────────────────────────────────────────────────────────────────────────
+
+x_cell (cell embedding) ────────────────┐
+                                        │
+                                        ▼
+                             [ Linear Projection → Query (Q) ]
+
+x_capsid (capsid embedding) ─┐
+                             ├──► [ Linear Projection → Keys (K) ]
+x_promoter (promoter vector) ─┘
+                             └──► [ Linear Projection → Values (V) ]
+
+Query (Q) ───────────────────────────────────────┐
+Keys (K), Values (V) ────────────────────────────┘
+                                        │
+                                        ▼
+                               [ Multi-Head Attention ]
+                                        │
+                                        ▼
+                               [ Residual + LayerNorm ]
+                                        │
+                                        ▼
+                               [ Feedforward Layer ]
+                                        │
+                                        ▼
+                               [ Residual + LayerNorm ]
+                                        │
+                                        ▼
+Concatenate (attn_out + x_cell + x_capsid + x_promoter)
+                                        │
+                                        ▼
+                                   [ LayerNorm ]
+                                        │
+                                        ▼
+                        [ Dense →128 ] → [ SiLU ] → [ Linear 128→2 ]
+                                        │
+                                        ▼
+                              [ Softplus → (α̂, β̂) ]
+                                        │
+                                        ▼
+OUTPUT: Beta(α̂,β̂)
+        • Expected % expression (p̂ = α̂/(α̂+β̂))
+        • Confidence Interval (uncertainty)
+
+
+────────────────────────────────────────────────────────────────────────
+M3: Gradient-Boosted Trees
+────────────────────────────────────────────────────────────────────────
+
+LEARNED EMBEDDINGS
+ ┌───────────────────────────────┐
+ │ x_cell (from scVI→MLP)        │
+ │ x_capsid (Evo2∥ESM2→fuse)     │
+ │ x_promoter (meta MLP ± CNN)   │
+ └───────────────────────────────┘
+            │
+            ├──────────────┐
+            │              │
+            ▼              ▼
+HANDCRAFTED FEATURE DERIVATION             METADATA DIRECT
+ ┌───────────────────────────────┐         ┌───────────────────────────────┐
+ │ cosine(cell,capsid)           │         │ tissue flags (one-hot)        │
+ │  = dot/‖·‖‖·‖                 │         │ promoter strength (scaled)    │
+ └───────────────────────────────┘         │ MOI → log1p                   │
+            │                              │ timepoint → log1p / bins      │
+            ▼                              └───────────────────────────────┘
+                 ┌────────────────────────────────────────────────────────┐
+                 │                 FEATURE MATRIX  Z                      │
+                 │ concat[ x_cell, x_capsid, x_promoter,                  │
+                 │         cosine_sim, vec_tissue, strength,              │
+                 │         moi_log, t_feat ]                              │
+                 └────────────────────────────────────────────────────────┘
+                                             │
+                                             ▼
+                                 GRADIENT-BOOSTED TREES (XGBoost)
+                                 ┌────────────────────────────────┐
+                                 │ Tree #1  Tree #2  …  Tree #T   │
+                                 └────────────────────────────────┘
+                                             │
+                                             ▼
+                                  ENSEMBLE SUM → raw_score = logit(y)
+                                             │
+                                             ▼
+                            OPTIONAL CALIBRATION (Platt / Isotonic)
+                                             │
+                                             ▼
+                                            OUTPUT
+                            ┌───────────────────────────────┐
+                            │ p̂ = sigmoid(raw_score)        │
+                            │ (calibrated probability)      │
+                            └───────────────────────────────┘
+
+
+
+────────────────────────────────────────────────────────────────────────
+M4: Sparse Gaussian Process (RBF)
+────────────────────────────────────────────────────────────────────────
+
+INPUTS
+ ┌───────────────────────────────┐
+ │ x_cell, x_capsid, x_promoter  │
+ └───────────────────────────────┘
+              │
+              ▼
+ [ CONCAT ] → high-dim vector (896D)
+              │
+              ▼
+ ┌───────────────────────────────┐
+ │ PCA REDUCTION                 │
+ │ • 896D → 32D (x₃₂)            │
+ └───────────────────────────────┘
+              │
+              ▼
+ ┌────────────────────────────────────────────┐
+ │   SPARSE GAUSSIAN PROCESS (FITC approx)    │
+ │                                            │
+ │  [1] Inputs: x₃₂, inducing points Z        │
+ │  [2] Kernels: RBF + White noise            │
+ │  [3] Covariance: K_mm, K_nm, K_nn approx   │
+ │  [4] Variational / FITC inference          │
+ │  [5] Prediction: μ(x), σ²(x)               │
+ │  [6] Link: sigmoid(μ) → p̂                  │
+ └────────────────────────────────────────────┘
+              │
+              ▼
+ OUTPUTS
+   • p̂ = predicted probability
+   • σ²(x) = uncertainty
+
+
+
+────────────────────────────────────────────────────────────────────────
+M5: Linear Probe (Ridge)
+────────────────────────────────────────────────────────────────────────
+
+INPUTS (learned embeddings)
+┌──────────────────────────────────────────┐
+│ x_cell  │ x_capsid  │ x_promoter         │
+└──────────────────────────────────────────┘
+                │
+                ▼
+[ CONCAT ] → x = [x_cell ⊕ x_capsid ⊕ x_promoter]
+                │
+                ▼
+┌──────────────────────────────────────────┐
+│ STANDARDIZE x                            │
+│  • zero-mean, unit-variance per feature  │
+└──────────────────────────────────────────┘
+                │
+                ▼
+┌──────────────────────────────────────────┐
+│ LINEAR MAP                               │
+│  • s = w·x + b                           │
+└──────────────────────────────────────────┘
+                │
+                ▼
+┌──────────────────────────────────────────┐
+│ SIGMOID                                  │
+│  • p̂ = σ(s)                              │
+└──────────────────────────────────────────┘
+                │
+                ├───────────────► INFERENCE OUTPUT
+                │                 ┌──────────────────────────────┐
+                │                 │ p̂ (baseline probability)     │
+                │                 └──────────────────────────────┘
+                │
+                ▼
+TRAINING (uses computational label y)
+┌──────────────────────────────────────────────────────────────────────┐
+│ LABEL FACTORY (computational y)                                      │
+│  inputs: x_cell, x_capsid, x_promoter, strength, MOI, time, tissue   │
+│  priors:                                                             │
+│    • P_cc = σ(α·cos(x_cell, x_capsid))                               │
+│    • P_pr = normalize(strength; tissue context)                      │
+│    • A   = g(MOI, time)                                              │
+│  fusion (monotone):                                                  │
+│    • s* = w1·logit(P_cc) + w2·logit(P_pr) + w3·A + b*                │
+│    • y  = σ(s*) ∈ [0,1]                                              │
+└──────────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ LOSS                                                                 │
+│  compare p̂ vs y (from label factory)                                 │
+│   • Logistic:  𝓛_cls = −[y log p̂ + (1−y) log(1−p̂)]                   │
+│   • (or) Squared on score:  𝓛_reg = (y − s)²                         │
+│  ridge penalty:  𝓛_ridge = λ‖w‖²                                     │
+│  total:  𝓛 = 𝓛_cls/𝓛_reg + 𝓛_ridge                                   │
+└──────────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ SOLVER (minimizes 𝓛 over w,b)                                        │
+│  • closed-form ridge:  w = (XᵀX + λI)⁻¹ Xᵀy  (small/medium X)        │
+│  • coordinate descent / CG / SGD  (high-dim)                         │
+│  updates w,b in [LINEAR MAP]                                         │
+└──────────────────────────────────────────────────────────────────────┘
