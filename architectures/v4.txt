@@ -1,6 +1,9 @@
 v4
 
 ────────────────────────────────────────────────────────────────────────
+(5) MODEL TRAINING
+5 different types of models to ensemble
+────────────────────────────────────────────────────────────────────────
 M1: BetaReg-MLP (Deep Net)
 ────────────────────────────────────────────────────────────────────────
 INPUTS
@@ -295,3 +298,68 @@ OUTPUT
 └──────────────────────────────────────────────────────────────────────────┘
 
 Legend:  σ(x)=1/(1+e^(−x)); logit(p)=ln(p/(1−p)); clip(p,ε,1−ε) bounds logits.
+
+
+────────────────────────────────────────────────────────────────────────
+(6) MODEL EVALS (post-training)
+────────────────────────────────────────────────────────────────────────
+
+INPUTS
+┌──────────────────────────────────────────────────────────────────────┐
+│ • Trained models: M1–M5 + Blender (w*, b*, f_iso)                    │
+│ • Splits: IID, LOCO, LOSO, LOPO + OOF predictions                    │
+│ • Labels y (or computational y)                                      │
+│ • Artifacts: dataset_version, encoder_SHA, label_cfg_hash            │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+METRICS (point accuracy)
+┌──────────────────────────────────────────────────────────────────────┐
+│ Regression-style:  Beta-NLL, R², MAE, Spearman ρ                     │
+│ Classification proxy (if thresholded): AUROC, AUPRC                  │
+│ Calibration: ECE, reliability curve                                  │
+│  ECE = Σ_b (|B_b|/N) · | mean(p̂)_b − mean(y)_b |                    │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+UNCERTAINTY VALIDATION
+┌──────────────────────────────────────────────────────────────────────┐
+│ • MC band coverage:  hit = 1{ y ∈ [q05, q95] }                       │
+│ • Conformal coverage (by stratum g):  hit = 1{ y ∈ [L,U]_g }         │
+│ • Report: nominal vs empirical coverage, band width Δ=U−L            │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+GENERALIZATION STRESS
+┌──────────────────────────────────────────────────────────────────────┐
+│ • LOCO (cell type held out)                                          │
+│ • LOSO (serotype/capsid held out)                                    │
+│ • LOPO (promoter held out)                                           │
+│ • Worst-k strata report (k=10%)                                      │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+DIAGNOSTICS & PLOTS
+┌──────────────────────────────────────────────────────────────────────┐
+│ • CellType × Serotype heatmap (pred vs obs)                          │
+│ • Reliability diagrams (global + per-stratum)                        │
+│ • Error vs uncertainty (residual |y−p̂| vs Δ)                        │
+│ • Drift sentinels baseline: embed shift, novelty scores              │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+GATES / THRESHOLDS (configurable)
+┌──────────────────────────────────────────────────────────────────────┐
+│ • ECE ≤ τ_cal      • Conformal coverage ≥ (1−α−τ_cov)                │
+│ • R² ≥ τ_r2        • Worst-stratum NLL ≤ τ_nll_worst                 │
+│ • p95 latency (sim) ≤ τ_lat (serving dry-run)                        │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+OUTPUTS
+┌──────────────────────────────────────────────────────────────────────┐
+│ • Eval report (metrics table + plots)                                │
+│ • Calibrator f_iso (frozen) + conformal residual tables              │
+│ • Baselines for monitoring: ECE₀, coverage₀, Δ₀, drift₀             │
+│ • Decision: Promote → Registry or Iterate → Training                 │
+└──────────────────────────────────────────────────────────────────────┘
