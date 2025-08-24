@@ -233,3 +233,59 @@ TRAINING (uses computational label y)
 │  • coordinate descent / CG / SGD  (high-dim)                         │
 │  updates w,b in [LINEAR MAP]                                         │
 └──────────────────────────────────────────────────────────────────────┘
+
+
+─────────────────────────────────────────────────────────────────────────────
+STACKING BLENDER
+─────────────────────────────────────────────────────────────────────────────
+
+INPUTS (from M1-M5 base models)
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │ Level-0 predictions:  p₁, p₂, p₃, p₄, p₅                               │
+ │ Optional uncertainties:                                                 │
+ │   • M1/M2: Beta(α̂,β̂)  → samples or logit-mean/var                    │
+ │   • M4:     Normal(μ,σ²) on logit → samples                            │
+ │   • M3/M5:  point probs (optionally add tiny logit noise)              │
+ └─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+A) META-LEARNING (STACKING)
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │ OOF feature build:  zᵢ^(m) = logit(clip(pᵢ^(m), ε, 1−ε))               │
+ │ Meta-model: constrained ridge on logits                                 │
+ │   sᵢ = b + Σₘ wₘ zᵢ^(m),   w = softmax(u)  (⇒ wₘ ≥ 0, Σw=1)            │
+ │   minimize  Σᵢ ( yᵢ − σ(sᵢ) )² + λ‖w‖²                                 │
+ │ Store: weights w*, bias b*                                              │
+ └─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+B) UNCERTAINTY PROPAGATION (INFERENCE)
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │ Monte-Carlo blending (T samples):                                        │
+ │   For t=1..T:                                                            │
+ │     • draw p_t^(m) from each model’s predictive law                      │
+ │     • z_t^(m)=logit(clip(p_t^(m)))                                       │
+ │     • s_t = b* + Σₘ w*ₘ z_t^(m)                                          │
+ │     • p_blend,t = σ(s_t)                                                 │
+ │ Aggregate:  mean  \bar p  and var  Var[p_blend]                          │
+ │ (Alt: delta method on logits if variances vₘ known: Var[s]≈Σ w*ₘ² vₘ)   │
+ └─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+C) CALIBRATION & INTERVALS
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │ Isotonic calibration on held-out:  p̂ = f_iso( \bar p )                  │
+ │ Apply to samples:  p̂_t = f_iso(p_blend,t)                               │
+ │ Quantile band (model variance):  [q05, q95] from {p̂_t}                  │
+ │ Split-conformal coverage (by stratum, e.g., cell_type):                  │
+ │   r_j = | y_j − f_iso(p_blend,j) |;   q_α = quantile_{1−α}( {r_j} )      │
+ │   Final CI:  [ max(0, p̂ − q_α),  min(1, p̂ + q_α) ]                      │
+ └─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+OUTPUT
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │ Final prediction:  p̂                                                   │
+ │ Uncertainty:     model band [q05, q95], conformal CI [L, U]             │
+ │ Provenance:      blender weights w*, bias b*, calib f_iso version       │
+ └─────────────────────────────────────────────────────────────────────────┘
